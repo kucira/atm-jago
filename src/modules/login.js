@@ -18,14 +18,13 @@ const loginCommand = (input) => {
     setTimeout(() => {
          getUser(name, (user) => {
             console.log(`Hello, ${name}!`);
-            console.log(`Your Balance is ${user.balance}!`);
+            console.log(`Your Balance is ${Number.isNaN(user.balance) ? 0 : user.balance}!`);
             if(user.debt) {
                 console.log(`owed ${user.debt.replace(/-/g, ' ')}`);
             }
             if(user.credit) {
                 console.log(`owed ${user.credit.replace(/-/g, ' ')}`);
             }
-                
         })
     }, 1000)
 }
