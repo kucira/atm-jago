@@ -25,7 +25,6 @@ const loginCommand = (input) => {
             if(user.credit) {
                 console.log(`owed ${user.credit.replace(/-/g, ' ')}`);
             }
-                
         })
     }, 1000)
 }

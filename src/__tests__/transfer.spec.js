@@ -14,8 +14,7 @@ const getMockUser = (name, debt = null, credit = null, balance = 0) => ({
 
 function setup() {
     // create a function into global context for Jest
-    // jest.spyOn(global.console, 'log').mockImplementation();
-    // jest.useFakeTimers();
+    jest.spyOn(global.console, 'log').mockImplementation();
     getUser.mockImplementation((name, callbackUser) => {
         getUser.mockImplementation((targetname, callbackTarget) => {
             return callbackUser(getMockUser(targetname, null, null, 10))
@@ -23,8 +22,8 @@ function setup() {
         return callbackUser(getMockUser(name, null, null, 10))
     })
     
-    readFile.mockImplementation((name, content, callback) => {
-        return callback('saitama');
+    readFile.mockImplementation((name, targetName = 'bob', callback) => {
+        return callback(targetName);
     });
 }
 
@@ -38,89 +37,119 @@ describe('transfer', () => {
         jest.clearAllMocks();
     });
 
-    // it('transfer 20 to alice from saitama with current balance 100', async () => {
-    //     getUser.mockImplementation((name, callback) => {
-
-    //         return callback(getMockUser('saitama', null, null, 100))
-    //     })
-    //     transferCommand('transfer alice 20');
-
-    //     readFile('login', 'transfer', (name) => {
-    //         expect(name).toBe('saitama');
-
-    //         getUser('saitama', (data) => {
-    //             expect(console.log.mock.calls[0][0]).toEqual("Transferred 20 to alice")
-    //             expect(console.log.mock.calls[0][0]).toEqual("Your balance 80")
-    //         })
-    //     }); 
-    // });
-
-    // it('transfer 20 to alice from saitama with current balance 10', async () => {
-    //     transferCommand('transfer alice 20');
-
-    //     readFile('login', 'transfer', (name) => {
-    //         expect(name).toBe('saitama');
-
-    //         getUser('saitama', (data) => {
-    //             expect(console.log.mock.calls[0][0]).toEqual("Transferred 10 to alice")
-    //             expect(console.log.mock.calls[0][0]).toEqual("Your balance 0")
-    //             expect(console.log.mock.calls[0][0]).toEqual("Owed 10 to alice")
-    //         })
-    //     }); 
-    // });
-
-    it('transfer 20 to alice from saitama with owed 10 to alice with current balance 10', async () => {
+    it('bob transfer alice 50 balance from 80', async () => {
         getUser.mockImplementation((name, callbackUser) => {
             getUser.mockImplementation((targetname, callbackTarget) => {
-                return callbackTarget(getMockUser('alice', null, '10-from-saitama', 10))
+                return callbackTarget(getMockUser('alice', null, null, 100))
             })
-            return callbackUser(getMockUser('saitama', '10-to-alice', null, 20))
+            return callbackUser(getMockUser('bob', null, null, 80))
         })
-        transferCommand('transfer alice 20');
+        transferCommand('transfer alice 50');
 
-        readFile('login', 'transfer', (name) => {
-            expect(name).toBe('saitama');
+        readFile('login', 'bob', (name) => {
+            expect(name).toBe('bob');
 
-            getUser('saitama', (data) => {
-                expect(console.log.mock.calls[0][0]).toEqual("Transferred 10 to alice")
-                expect(console.log.mock.calls[1][0]).toEqual("your balance is 0")
-                expect(console.log.mock.calls[2][0]).toEqual("Owed 10 to alice")
+            getUser('bob', (data) => {
+                expect(console.log.mock.calls[0][0]).toEqual("Transferred 50 to alice")
+                expect(console.log.mock.calls[1][0]).toEqual("your balance is 30")
             })
         }); 
     });
 
-    // it('transfer 20 to alice from saitama with owed 20 from alice with current balance 10', async () => {
-    //     getUser.mockImplementation((name, callback) => {
-    //         return callback(getMockUser('saitama', null, '10-from-alice', 10))
-    //     })
-    //     transferCommand('transfer alice 20');
+    it('bob transfer alice 100 balance from 30', async () => {
+        getUser.mockImplementation((name, callbackUser) => {
+            getUser.mockImplementation((targetname, callbackTarget) => {
+                return callbackTarget(getMockUser('alice', null, null, 150))
+            })
+            return callbackUser(getMockUser('bob', null, null, 30))
+        })
+        transferCommand('transfer alice 100');
 
-    //     readFile('login', 'transfer', (name) => {
-    //         expect(name).toBe('saitama');
+        readFile('login', 'bob', (name) => {
+            expect(name).toBe('bob');
 
-    //         getUser('saitama', (data) => {
-    //             expect(console.log.mock.calls[0][0]).toEqual("Transferred 10 to alice")
-    //             expect(console.log.mock.calls[1][0]).toEqual("Your balance 0")
-    //             expect(console.log.mock.calls[2][0]).toEqual("Owed 10 to alice")
-    //         })
-    //     }); 
-    // });
+            getUser('bob', (data) => {
+                expect(console.log.mock.calls[0][0]).toEqual("Transferred 30 to alice")
+                expect(console.log.mock.calls[1][0]).toEqual("Your balance is 0")
+                expect(console.log.mock.calls[2][0]).toEqual("Owed 70 to alice")
+            })
+        }); 
+    });
 
-    // it('transfer 40 to alice from saitama with owed 20 from alice with current balance 30', async () => {
-    //     getUser.mockImplementation((name, callback) => {
-    //         return callback(getMockUser('saitama', null, '20-from-alice', 30))
-    //     })
-    //     transferCommand('transfer alice 40');
-        
-    //     jest.runAllTimers();
-    //     readFile('login', 'transfer', (name) => {
-    //         expect(name).toBe('saitama');
+    it('bob transfer alice 100 balance from 20', async () => {
+        getUser.mockImplementation((name, callbackUser) => {
+            getUser.mockImplementation((targetname, callbackTarget) => {
+                return callbackTarget(getMockUser('alice', null, '50-from-bob', 180))
+            })
+            return callbackUser(getMockUser('bob', '50-to-alice', null, 20))
+        })
+        transferCommand('transfer alice 100');
 
-    //         getUser('saitama', (data) => {
-    //             expect(console.log.mock.calls[0][0]).toEqual("Transferred 30 to alice")
-    //             expect(console.log.mock.calls[1][0]).toEqual("Your balance 0")
-    //             expect(console.log.mock.calls[2][0]).toEqual("Owed 10 to alice")
-    //         })
-    //     }); 
-    // });
+        readFile('login', 'bob', (name) => {
+            expect(name).toBe('bob');
+
+            getUser('bob', (data) => {
+                expect(console.log.mock.calls[0][0]).toEqual("Transferred 20 to alice")
+                expect(console.log.mock.calls[1][0]).toEqual("Your balance is 0")
+                expect(console.log.mock.calls[2][0]).toEqual("Owed 130 to alice")
+            })
+        }); 
+    });
+
+    it('alice transfer bob 30 balance from 20 owed 40 from bob', async () => {
+        getUser.mockImplementation((name, callbackUser) => {
+            getUser.mockImplementation((targetname, callbackTarget) => {
+                return callbackTarget(getMockUser('bob', '40-to-alice', null, 0))
+            })
+            return callbackUser(getMockUser('alice', null, '40-from-bob', 20))
+        })
+        transferCommand('transfer bob 30');
+
+        readFile('login', 'alice', (name) => {  
+            expect(name).toBe('alice');
+
+            getUser('bob', (data) => {
+                expect(console.log.mock.calls[0][0]).toEqual("Your balance is 20")
+                expect(console.log.mock.calls[1][0]).toEqual("Owed 10 to bob")
+            })
+        }); 
+    });
+
+    it('alice transfer bob 30, balance from 210 owed 40 from bob', async () => {
+        getUser.mockImplementation((name, callbackUser) => {
+            getUser.mockImplementation((targetname, callbackTarget) => {
+                return callbackTarget(getMockUser('bob', '40-to-alice', null, 0))
+            })
+            return callbackUser(getMockUser('alice', null, '40-from-bob', 210))
+        })
+        transferCommand('transfer bob 30');
+
+        readFile('login', 'alice', (name) => {  
+            expect(name).toBe('alice');
+
+            getUser('bob', (data) => {
+                expect(console.log.mock.calls[0][0]).toEqual("Your balance is 210")
+                expect(console.log.mock.calls[1][0]).toEqual("Owed 10 to bob")
+            })
+        }); 
+    });
+
+    it('alice transfer bob 100,  balance from 210 owed 40 from bob', async () => {
+        getUser.mockImplementation((name, callbackUser) => {
+            getUser.mockImplementation((targetname, callbackTarget) => {
+                return callbackTarget(getMockUser('bob', '40-to-alice', null, 10))
+            })
+            return callbackUser(getMockUser('alice', null, '40-from-bob', 210))
+        })
+        transferCommand('transfer bob 100');
+
+        readFile('login', 'alice', (name) => {  
+            expect(name).toBe('alice');
+
+            getUser('bob', (data) => {
+                expect(console.log.mock.calls[0][0]).toEqual("Your balance is 150")
+                expect(console.log.mock.calls[1][0]).toEqual("Owed 0 to bob")
+            })
+        }); 
+    });
 }); 

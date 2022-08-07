@@ -23,7 +23,26 @@ yarn install
 ## Usage
 
 ```sh
-yarn run start
+yarn start
+
+## Commands
+
+* `login [name]` - Logs in as this customer and creates the customer if not exist
+
+* `deposit [amount]` - Deposits this amount to the logged in customer
+
+* `withdraw [amount]` - Withdraws this amount from the logged in customer
+
+* `transfer [target] [amount]` - Transfers this amount from the logged in customer to the target customer
+
+* `logout` - Logs out of the current customer
+
+After run command, please run command yarn start again to running the program
+ex: 
+yarn start
+login alice -> it will login alice account
+yarn start
+deposit 100 -> it will deposit 100 to alice account
 ```
 
 ## Run tests

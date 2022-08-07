@@ -11,42 +11,98 @@ const transferCommand = (input) => {
     transfer(args[1].toLowerCase(), +args[2]);
 }
 
-const checkDebt = (user, targetName, targetData, debtOrCredit, amount) => {
-    const details = debtOrCredit.split('-');
-    const debtAmount = details ? +details[0] : 0;
+const calculateCredit = (credit, user, targetUser, totalBalance, amount) => {
+     /** credit */
 
-    const currentBalance = user.balance - debtAmount;
-    //write debt
-    const diffAmountDebt = Math.abs(currentBalance - amount);
-    const dataDebt = `${diffAmountDebt}-to-${targetName}`
-    const dataCredit = `${diffAmountDebt}-from-${user.name}`
+    const details = credit.split('-');
+    const creditAmount = details ? +details[0] : 0;
 
-    //current user
-    writeFile(user.name.toLowerCase(), [0, dataDebt].join('|'));
-    //target user
-    writeFile(targetName.toLowerCase(), [targetData.balance + currentBalance, dataCredit].join('|'));
-    console.log('aa', targetName.toLowerCase(), targetData.balance + currentBalance)
+    // get total credit substract from transfer amount
+    const totalCredits = amount - creditAmount;
 
-    console.log(`Transferred ${Math.abs(currentBalance)} to ${targetName}`);
-    console.log(`Your balance ${0}`);   
-    console.log(`Owed ${diffAmountDebt} to ${targetName}`);
+    // if minus means still have credit
+    const isStillCredit = totalCredits < 0;
+    const keyAction = isStillCredit ? 'from' : 'to';
+    const dataCredit = `${Math.abs(totalCredits)}-${keyAction}-${targetUser.name}`
+    const dataDebt = `${Math.abs(totalCredits)}-${keyAction === 'to' ? 'from' : 'to'}-${user.name}`
+
+    let isCreditClear = false;
+    // if no credit, means credit > 0 means if 0 credit clear, 
+    // if larger than 0 it means possibility to become debt
+    // ex : existing balance 100, current credit 40, transfer 100 -> 100 - 40 = 60 -> means 40 already paid, and 20 become debt
+    if(!isStillCredit) {
+        // check if existing balance larger than total credits
+         // ex : current credit 40, transfer 100 -> 100 - 40 = 60 -> means 40 already paid, and 20 become debt
+         // 100 - 20 = 80; means debt able to paid
+        if(user.balance > totalCredits) {
+            isCreditClear = true;
+        }
+    }
+    
+    const newBalance = isCreditClear ? user.balance - totalCredits : user.balance
+    const targetNewBalance = isCreditClear ? targetUser.balance + Math.abs(totalCredits) : targetUser.balance + 0
+
+    writeFile(user.name.toLowerCase(), [newBalance, isCreditClear ? '' : dataCredit].join('|'));
+    writeFile(targetUser.name.toLowerCase(), [targetNewBalance, isCreditClear ? '' : dataDebt].join('|'))
+
+    console.log(`Your balance is ${newBalance}`);
+    console.log(`Owed ${isCreditClear ? 0 : Math.abs(totalCredits)} ${keyAction} ${targetUser.name}`)
 }
 
-const checkCredit = (user, targetName, data, debtOrCredit, amount) => {
-    // if user have credit
-    const details = debtOrCredit.split('-');
-    const creditAmount = +details[0];
+const calculateDebt = (currentBalance, totalBalance, debt, user, targetUser) => {
+    let debtAmount = 0;
 
-    let diffAmountCredit = amount - creditAmount;
-    const dataDebt = diffAmountCredit > 0 ? '' : `${Math.abs(diffAmountCredit)}-to-${user.name.toLowerCase()}`
-    const dataCredit = diffAmountCredit > 0 ? '' : `${Math.abs(diffAmountCredit)}-from-${targetName.toLowerCase()}`
+    //get default total debt based on current balance
+    let totalDebt = Math.abs(currentBalance);
+    // new total balance if debt add from existing balance
+    totalBalance = targetUser.balance + user.balance
 
-    writeFile(user.name.toLowerCase(), [user.balance - (diffAmountCredit < 0 ? 0 : diffAmountCredit), dataCredit].join('|'));
-    writeFile(targetName.toLowerCase(), [Math.abs(data.balance + (diffAmountCredit < 0 ? amount : diffAmountCredit)), dataDebt].join('|'));
+    if(debt) {
+        const details = debt.split('-');
+        debtAmount = details ? +details[0] : 0;
+        // get total debt
+        totalDebt = Math.abs(currentBalance) + debtAmount;
+    }
 
-    console.log(`Transferred ${(diffAmountCredit < 0 ? amount : diffAmountCredit)} to ${targetName}`);
-    console.log(`your balance is ${user.balance - (diffAmountCredit < 0 ? 0 : diffAmountCredit)}`);
-    console.log(`Owed ${diffAmountCredit > 0 ? 0 : Math.abs(diffAmountCredit)} to ${targetName}`);
+    //write debt
+    const dataDebt = `${totalDebt}-to-${targetUser.name}`
+    const dataCredit = `${totalDebt}-from-${user.name}`
+
+    writeFile(user.name.toLowerCase(), [currentBalance < 0 ? 0 : currentBalance, dataDebt].join('|'));
+    writeFile(targetUser.name.toLowerCase(), [totalBalance, dataCredit].join('|'));
+
+    console.log(`Transferred ${user.balance} to ${targetUser.name}`);
+    console.log(`Your balance is ${0}`);
+    console.log(`Owed ${totalDebt} to ${targetUser.name}`)
+
+
+}
+
+const sendMoney = (user, targetUser, amount) => {
+    // get current balance if minus means debt
+    const currentBalance = user.balance - amount;
+    // add to target balance user
+    // this is default value no debt
+    let totalBalance = targetUser.balance + amount
+
+    const debt = user.debt || null;
+    const credit = user.credit || null;
+
+    if(credit) {
+        calculateCredit(credit, user, targetUser, totalBalance, amount)
+        return;
+    }
+
+    if(currentBalance < 0) {
+        calculateDebt(currentBalance, totalBalance, debt, user, targetUser)
+        return;
+    }
+
+    // no condition fulfilled transfer directly
+    writeFile(user.name.toLowerCase(), [currentBalance < 0 ? 0 : currentBalance, ''].join('|'));
+    writeFile(targetUser.name.toLowerCase(), [totalBalance, ''].join('|'));
+    console.log(`Transferred ${amount} to ${targetUser.name}`);
+    console.log(`your balance is ${currentBalance < 0 ? 0 : currentBalance}`);
 }
 
 const transfer = (targetName, amount) => {
@@ -67,58 +123,16 @@ const transfer = (targetName, amount) => {
                 return;
             }
 
-            let totalBalance = 0;
             getUser(name.toLowerCase(), (user) => {
-                console.log(user, 'user')
                 // get user of target
                 getUser(targetName.toLowerCase(), (targetData) => {
-                    console.log(targetData, 'targetData')
                     // transfer money, if balance money insufficient write debt
-                    const debtOrCredit = targetData.debt ? targetData.debt : targetData.credit || ''
                     if(user.balance === 0) {
                         console.log(`can't transfer to ${targetName} please deposit first`);
                         return;
                     }
 
-                    // if balance less than amount transfer
-                    // process and check if have debt or credit
-                    if(user.balance < +amount) {
-                        // if have credit
-                        // process credit first
-                        if(targetData.credit) {
-                            checkCredit(user, targetName, targetData, debtOrCredit, amount);
-                            return;
-                        }
-
-                        //if not process as debt
-                        checkDebt(user, targetName, targetData, debtOrCredit, amount);
-                        return;
-                    }
-
-                    // no debt or credit
-                    if(!debtOrCredit) {
-                        totalBalance = targetData.balance + amount;
-        
-                        writeFile(targetName.toLowerCase(), [totalBalance, debtOrCredit].join('|'));
-                        writeFile(user.name.toLowerCase(), [user.balance - amount, debtOrCredit].join('|'));
-        
-                        console.log(`Transferred ${amount} to ${targetName}`);
-                        console.log(`your balance is ${user.balance - amount}`);
-                    }
-
-                    // if balance more than amount
-                    //check or credit
-                    if(targetData.debt) {
-                        checkDebt(user, targetName, targetData, debtOrCredit, amount);
-                        return;
-                    }
-                    
-                    
-                    if(targetData.credit) {
-                        checkCredit(user, targetName, targetData, debtOrCredit, amount);
-                        return;
-                    }
-
+                    sendMoney(user, targetData, amount);
                 });
             })
         });
