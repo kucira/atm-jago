@@ -44,6 +44,7 @@ login alice -> it will login alice account
 yarn start
 deposit 100 -> it will deposit 100 to alice account
 ```
+[Screencast from 07-08-22 22:26:29.webm](https://user-images.githubusercontent.com/8500294/183298679-35cd4a43-694a-43e3-b83c-3c46d1be8a3f.webm)
 
 ## Run tests
 
